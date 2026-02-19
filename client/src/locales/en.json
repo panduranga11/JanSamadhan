@@ -1,0 +1,34 @@
+{
+  "common": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile",
+    "dashboard": "Dashboard",
+    "home": "Home",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "auth": {
+    "email": "Email Address",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "fullName": "Full Name",
+    "loginTitle": "Welcome Back",
+    "loginSubtitle": "Enter your credentials to access your account",
+    "registerTitle": "Create Account",
+    "registerSubtitle": "Join JanSamadhan to resolve your grievances",
+    "googleLogin": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "forgotPassword": "Forgot Password?"
+  },
+  "nav": {
+    "grievance": "Raise Complaint",
+    "track": "Track Status",
+    "admin": "Admin Panel"
+  }
+}

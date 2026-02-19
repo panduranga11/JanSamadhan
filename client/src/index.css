@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #2563EB;
+  --color-brand-primaryDark: #1E3A8A;
+  --color-brand-accent: #F59E0B;
+
+  --color-status-success: #16A34A;
+  --color-status-warning: #F59E0B;
+  --color-status-error: #DC2626;
+  --color-status-info: #2563EB;
+
+  --color-surface-light: #FFFFFF;
+  --color-surface-dark: #111827;
+
+  --color-background-light: #F8FAFC;
+  --color-background-dark: #0F172A;
+
+  --color-text-light: #111827;
+  --color-text-dark: #F9FAFB;
+
+  --color-border-light: #E5E7EB;
+  --color-border-dark: #374151;
+}
+
+/* Custom Utilities for background and text based on theme */
+.light {
+  --bg-base: var(--color-background-light);
+  --bg-surface: var(--color-surface-light);
+  --text-primary: var(--color-text-light);
+  --border-default: var(--color-border-light);
+}
+
+.dark {
+  --bg-base: var(--color-background-dark);
+  --bg-surface: var(--color-surface-dark);
+  --text-primary: var(--color-text-dark);
+  --border-default: var(--color-border-dark);
+}
+
+@layer base {
+  body {
+    @apply bg-background-light text-text-light dark:bg-background-dark dark:text-text-dark transition-colors duration-300;
+  }
+}
