@@ -12,7 +12,8 @@ export const LanguageProvider = ({ children }) => {
     i18n.changeLanguage(lng);
   };
 
-  const currentLanguage = i18n.language;
+  // i18n.language can be 'en-US', 'hi-IN' etc. — normalize to 2-char code
+  const currentLanguage = (i18n.language || 'en').slice(0, 2).toLowerCase();
 
   const value = {
     currentLanguage,

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { loginWithGoogle } from '../services/authService';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -22,9 +23,13 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      await login(formData.email, formData.password);
-      await login(formData.email, formData.password);
-      navigate('/'); // Redirect to home/dashboard after login
+      const data = await login(formData.email, formData.password);
+      // Role-based redirect
+      if (data?.user?.role === 'admin' || data?.user?.role === 'super_admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
@@ -125,6 +130,7 @@ const Login = () => {
             <div className="mt-6">
               <button
                 type="button"
+                onClick={loginWithGoogle}
                 className="w-full flex justify-center items-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-surface-light dark:bg-surface-dark text-sm font-medium text-text-light dark:text-text-dark hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
               >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-2" alt="Google" />

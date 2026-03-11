@@ -1,6 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000/api'; // Mock URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-const headers = () => {
+const authHeaders = () => {
   const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',
@@ -11,43 +11,57 @@ const headers = () => {
 const handleResponse = async (response) => {
   const text = await response.text();
   const data = text ? JSON.parse(text) : {};
-  
+
   if (!response.ok) {
-    const error = (data && data.message) || response.statusText;
-    throw new Error(error);
+    // Backend sends { success: false, error: "..." }
+    const message = data?.error || data?.message || response.statusText || 'Request failed';
+    throw new Error(message);
   }
-  return data;
+  // Backend sends { success: true, data: ... } — unwrap data layer
+  return data?.data !== undefined ? data.data : data;
 };
 
 export const api = {
-  get: async (url) => {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
-       method: 'GET',
-       headers: headers()
-    });
-    return handleResponse(response);
-  },
-  post: async (url, body) => {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+  get: (url) =>
+    fetch(`${API_BASE_URL}${url}`, { headers: authHeaders() })
+      .then(handleResponse),
+
+  post: (url, body) =>
+    fetch(`${API_BASE_URL}${url}`, {
       method: 'POST',
-      headers: headers(),
-      body: JSON.stringify(body)
-    });
-    return handleResponse(response);
-  },
-  put: async (url, body) => {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }).then(handleResponse),
+
+  put: (url, body) =>
+    fetch(`${API_BASE_URL}${url}`, {
       method: 'PUT',
-      headers: headers(),
-      body: JSON.stringify(body)
-    });
-    return handleResponse(response);
-  },
-  delete: async (url) => {
-    const response = await fetch(`${API_BASE_URL}${url}`, {
+      headers: authHeaders(),
+      body: JSON.stringify(body),
+    }).then(handleResponse),
+
+  delete: (url) =>
+    fetch(`${API_BASE_URL}${url}`, {
       method: 'DELETE',
-      headers: headers()
-    });
-    return handleResponse(response);
-  }
+      headers: authHeaders(),
+    }).then(handleResponse),
+
+  // multipart/form-data (for file uploads) — do NOT set Content-Type, browser does it
+  postForm: (url, formData) => {
+    const token = localStorage.getItem('token');
+    return fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(handleResponse);
+  },
+
+  putForm: (url, formData) => {
+    const token = localStorage.getItem('token');
+    return fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }).then(handleResponse);
+  },
 };

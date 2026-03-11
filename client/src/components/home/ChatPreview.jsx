@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '../../services/api';
 
 const mockMessages = [
     {
@@ -28,6 +29,26 @@ const mockMessages = [
 ];
 
 const ChatPreview = () => {
+    const [onlineCount, setOnlineCount] = useState(0);
+
+    useEffect(() => {
+        const fetchOnlineCount = async () => {
+            try {
+                const data = await api.get('/chat/online-count');
+                if (data && data.count !== undefined) {
+                    setOnlineCount(data.count);
+                }
+            } catch (err) {
+                console.error('Failed to fetch online count:', err);
+            }
+        };
+
+        fetchOnlineCount();
+        // optionally poll every 30 seconds
+        const interval = setInterval(fetchOnlineCount, 30000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <section className="py-24 bg-gray-50 border-t border-gray-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -80,7 +101,7 @@ const ChatPreview = () => {
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                                     </span>
-                                    32 Online
+                                    {onlineCount} {onlineCount === 1 ? 'Online' : 'Online'}
                                 </span>
                             </div>
                             <motion.div 

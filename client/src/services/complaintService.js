@@ -1,24 +1,48 @@
-// Mock Service for now
-// import { api } from './api';
+import { api } from './api';
 
-export const getComplaints = async () => {
-    // return api.get('/complaints');
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve([
-                { id: 1, title: 'Street Light Broken', status: 'Pending', date: '2023-10-01', description: 'Street light on Main St is not working.' },
-                { id: 2, title: 'Garbage Collection', status: 'Resolved', date: '2023-09-25', description: 'Garbage was not collected yesterday.' },
-                { id: 3, title: 'Pothole on Road', status: 'In Progress', date: '2023-10-05', description: 'Large pothole causing traffic.' },
-            ]);
-        }, 800);
-    });
+// ── Categories ───────────────────────────────────────────
+export const getCategories = () => api.get('/categories');
+
+// ── User Complaints ───────────────────────────────────────
+export const getComplaints = (params = {}) => {
+  const q = new URLSearchParams(params).toString();
+  return api.get(`/complaints${q ? `?${q}` : ''}`);
 };
 
-export const createComplaint = async (complaintData) => {
-    // return api.post('/complaints', complaintData);
-     return new Promise(resolve => {
-        setTimeout(() => {
-            resolve({ id: Math.floor(Math.random() * 1000), ...complaintData, status: 'Pending', date: new Date().toISOString().split('T')[0] });
-        }, 1000);
-    });
+export const getComplaintById = (id) => api.get(`/complaints/${id}`);
+
+export const createComplaint = (formData) => api.postForm('/complaints', formData);
+
+export const editComplaint = (id, body) => api.put(`/complaints/${id}`, body);
+
+export const rateComplaint = (id, { rating, feedback }) =>
+  api.post(`/complaints/${id}/rating`, { rating, feedback });
+
+// ── Admin Complaint Actions ───────────────────────────────
+export const updateComplaintStatus = (id, { status, note }) =>
+  api.put(`/complaints/${id}/status`, { status, note });
+
+export const assignComplaint = (id, assignedTo) =>
+  api.post(`/complaints/${id}/assign`, { assignedTo });
+
+// ── Admin Dashboard ───────────────────────────────────────
+export const getAdminDashboard = () => api.get('/admin/dashboard');
+
+export const getAllComplaints = (params = {}) => {
+  const q = new URLSearchParams(params).toString();
+  return api.get(`/admin/complaints${q ? `?${q}` : ''}`);
 };
+
+export const getAllUsers = (params = {}) => {
+  const q = new URLSearchParams(params).toString();
+  return api.get(`/admin/users${q ? `?${q}` : ''}`);
+};
+
+export const toggleBanUser = (id) => api.put(`/admin/users/${id}/ban`);
+
+// ── Notifications ─────────────────────────────────────────
+export const getNotifications = () => api.get('/notifications');
+
+export const markNotificationRead = (id) => api.put(`/notifications/${id}/read`);
+
+export const markAllNotificationsRead = () => api.put('/notifications/read-all');

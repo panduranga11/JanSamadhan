@@ -1,58 +1,77 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { login as loginService, logout as logoutService, register as registerService } from '../services/authService';
+import { getUserProfile } from '../services/userService';
+import { disconnectSocket } from '../services/socketService';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Pre-populate from localStorage instantly — prevents blank screen flash
+  const storedUser = (() => {
+    try { return JSON.parse(localStorage.getItem('user')); } catch { return null; }
+  })();
+
+  const [user, setUser] = useState(storedUser);
+  const [loading, setLoading] = useState(false); // Don't block render
 
   useEffect(() => {
-    // Check for stored token/user on mount
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Silently re-validate token in the background
+    const token = localStorage.getItem('token');
+    if (!token) { setUser(null); return; }
+
+    getUserProfile()
+      .then((profile) => {
+        setUser(profile);
+        localStorage.setItem('user', JSON.stringify(profile));
+      })
+      .catch(() => {
+        // Token expired or invalid — sign out
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+      });
   }, []);
 
   const login = async (email, password) => {
     const data = await loginService(email, password);
-    setUser(data.user);
+    localStorage.setItem('token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
-    localStorage.setItem('token', data.token); // Store token
+    setUser(data.user);
     return data;
   };
 
   const register = async (userData) => {
-    // We need to import register from service inside or outside. 
     const data = await registerService(userData);
-    setUser(data.user);
-    localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    setUser(data.user);
     return data;
   };
-   
-  const logout = () => {
-    logoutService();
-    setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
+
+  /** Called by OAuthCallback page after backend redirects with ?token=JWT */
+  const handleOAuthToken = async (token) => {
+    localStorage.setItem('token', token);
+    const profile = await getUserProfile();
+    localStorage.setItem('user', JSON.stringify(profile));
+    setUser(profile);
+    return profile;
   };
 
-  const value = {
-    user,
-    login,
-    register,
-    logout,
-    loading
+  const logout = () => {
+    logoutService();
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    disconnectSocket();
+    setUser(null);
   };
+
+  const value = { user, login, register, logout, handleOAuthToken, loading };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -1,0 +1,9 @@
+node_modules/
+.env
+uploads/
+logs/
+*.log
+dist/
+.DS_Store
+read_docx.py
+output.txt

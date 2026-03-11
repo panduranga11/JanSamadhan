@@ -14,7 +14,7 @@ const ComplaintCard = ({ complaint }) => {
                 <StatusBadge status={complaint.status} />
                 <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
                     <Calendar className="w-3 h-3 mr-1" />
-                    {complaint.date}
+                    {complaint.created_at ? new Date(complaint.created_at).toLocaleDateString() : complaint.date}
                 </span>
             </div>
             

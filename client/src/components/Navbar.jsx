@@ -76,9 +76,9 @@ const Navbar = () => {
                         className="flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full border border-gray-200 hover:border-brand-primary/30 transition-all bg-white"
                     >
                         <div className="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-sm">
-                            {user.name?.charAt(0).toUpperCase()}
+                            {(user.full_name || user.name)?.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">{user.name?.split(' ')[0]}</span>
+                        <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">{(user.full_name || user.name)?.split(' ')[0]}</span>
                         <ChevronDown size={14} className={`text-gray-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </button>
 
@@ -96,7 +96,7 @@ const Navbar = () => {
                                     <p className="text-sm font-bold text-gray-900 truncate">{user.email}</p>
                                 </div>
                                 
-                                <Link to={user.role === 'admin' ? "/admin" : "/active-complaints"} onClick={() => setIsProfileOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-primary">
+                                <Link to={user.role === 'admin' || user.role === 'super_admin' ? "/admin" : "/my-complaints"} onClick={() => setIsProfileOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-primary">
                                     Dashboard
                                 </Link>
                                 <Link to="/profile" onClick={() => setIsProfileOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-brand-primary">
@@ -159,10 +159,10 @@ const Navbar = () => {
                             <>
                                 <div className="flex items-center gap-3 px-4 mb-4">
                                     <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">
-                                        {user.name?.charAt(0)}
+                                        {(user.full_name || user.name)?.charAt(0)}
                                     </div>
                                     <div>
-                                        <p className="font-bold text-gray-900">{user.name}</p>
+                                        <p className="font-bold text-gray-900">{user.full_name || user.name}</p>
                                         <p className="text-xs text-gray-500">{user.email}</p>
                                     </div>
                                 </div>

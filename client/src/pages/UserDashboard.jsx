@@ -6,18 +6,21 @@ import ChatWidget from '../components/ChatWidget';
 import { Loader2, PlusCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 const UserDashboard = () => {
     const { user } = useAuth();
+    const { t } = useTranslation();
     const [recentComplaints, setRecentComplaints] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                // Fetch real mock data
-                const data = await getComplaints();
-                setRecentComplaints(data.slice(0, 3)); // Show top 3
+                const data = await getComplaints({ mine: true });
+                // Backend returns { complaints: [...] }
+                const list = Array.isArray(data) ? data : (data?.complaints || []);
+                setRecentComplaints(list.slice(0, 3));
             } catch (error) {
                 console.error("Failed to load complaints:", error);
             } finally {
@@ -35,11 +38,11 @@ const UserDashboard = () => {
                 {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name?.split(' ')[0]}!</h1>
-                        <p className="text-gray-500">Here is what's happening with your neighborhood.</p>
+                        <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.welcome')}, {user?.full_name?.split(' ')[0] || user?.name?.split(' ')[0]}!</h1>
+                        <p className="text-gray-500">{t('nav.grievance')} &amp; {t('sidebar.myComplaints')}</p>
                     </div>
                     <Link to="/raise-complaint" className="bg-brand-primary hover:bg-brand-primaryDark text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-transform hover:scale-105 flex items-center">
-                        <PlusCircle className="mr-2 h-5 w-5" /> Raise New Complaint
+                        <PlusCircle className="mr-2 h-5 w-5" /> {t('dashboard.raiseNew')}
                     </Link>
                 </div>
 
@@ -48,9 +51,9 @@ const UserDashboard = () => {
                     {/* Left Column: Recent Activity */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-gray-800">Recent Complaints</h2>
+                            <h2 className="text-xl font-bold text-gray-800">{t('dashboard.recentComplaints')}</h2>
                             <Link to="/my-complaints" className="text-brand-primary hover:underline text-sm font-medium flex items-center">
-                                View All <ArrowRight className="ml-1 w-4 h-4" />
+                                {t('common.viewAll')} <ArrowRight className="ml-1 w-4 h-4" />
                             </Link>
                         </div>
 
@@ -64,8 +67,8 @@ const UserDashboard = () => {
                             </div>
                         ) : (
                             <div className="bg-gray-50 rounded-xl p-8 text-center border border-dashed border-gray-300">
-                                <p className="text-gray-500 mb-4">You haven't raised any complaints yet.</p>
-                                <Link to="/raise-complaint" className="text-brand-primary font-bold hover:underline">Raise your first complaint</Link>
+                                <p className="text-gray-500 mb-4">{t('dashboard.noComplaints')}</p>
+                                <Link to="/raise-complaint" className="text-brand-primary font-bold hover:underline">{t('dashboard.raiseNew')}</Link>
                             </div>
                         )}
                     </div>
