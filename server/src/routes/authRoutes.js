@@ -1,18 +1,21 @@
 const express  = require('express');
 const router   = express.Router();
 const passport = require('passport');
-const jwt      = require('jsonwebtoken');
 
 const {
-  register, login, logout, googleCallback, setPassword,
+  register, login, logout, googleCallback, forgotPassword, resetPassword,
 } = require('../controllers/user/authController');
 const { verifyToken } = require('../middleware/authMiddleware');
-const { loginLimiter, registerLimiter, oauthLimiter } = require('../middleware/rateLimiter');
+const { loginLimiter, registerLimiter, oauthLimiter, forgotLimiter } = require('../middleware/rateLimiter');
 
 // Email + Password
 router.post('/register', registerLimiter, register);
 router.post('/login',    loginLimiter,    login);
 router.post('/logout',   verifyToken,     logout);
+
+// Forgot / Reset Password (public, rate-limited)
+router.post('/forgot-password', forgotLimiter, forgotPassword);
+router.post('/reset-password',  forgotLimiter, resetPassword);
 
 // Google OAuth
 router.get('/google',
@@ -27,8 +30,5 @@ router.get('/google/callback',
   }),
   googleCallback
 );
-
-// Set password (Google-only users)
-router.post('/set-password', setPassword);
 
 module.exports = router;

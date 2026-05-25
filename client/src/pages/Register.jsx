@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Mail, Lock, User, Loader2, MapPin } from 'lucide-react';
+import { Mail, Lock, User, Loader2, MapPin, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
@@ -12,9 +12,12 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ fullName: '', email: '', password: '', confirmPassword: '', city: '' });
   const [error, setError] = useState('');
+  const [emailExists, setEmailExists] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error)       { setError(''); }
+    if (emailExists) { setEmailExists(false); }
   };
 
   const handleSubmit = async (e) => {
@@ -25,11 +28,18 @@ const Register = () => {
     }
     setLoading(true);
     setError('');
+    setEmailExists(false);
     try {
       await register(formData);
       navigate('/'); 
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      const msg = err.message || 'Registration failed';
+      if (msg.toLowerCase().includes('already registered') ||
+          msg.toLowerCase().includes('already in use') || err.status === 409) {
+        setEmailExists(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -142,6 +152,27 @@ const Register = () => {
               </div>
             </div>
 
+            {/* Email already exists banner */}
+            {emailExists && (
+              <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-3">
+                <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={15} />
+                <div className="text-amber-700 dark:text-amber-300 text-sm">
+                  <p className="font-semibold">An account with this email already exists.</p>
+                  <p className="text-xs mt-0.5">
+                    <Link to="/login" className="underline font-semibold hover:text-brand-primary">Log in</Link>
+                    {' '}to your account, or{' '}
+                    <Link
+                      to={`/forgot-password?email=${encodeURIComponent(formData.email)}`}
+                      className="underline font-semibold hover:text-brand-primary"
+                    >
+                      reset your password
+                    </Link>{' '}if you've forgotten it.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Generic error */}
             {error && (
               <div className="text-status-error text-sm text-center">
                 {error}

@@ -33,13 +33,35 @@ const googleCallback = (req, res) => {
   }
 };
 
-const setPassword = async (req, res, next) => {
+/**
+ * POST /api/auth/forgot-password
+ * Always responds 200 (prevents email enumeration).
+ */
+const forgotPassword = async (req, res, next) => {
   try {
-    const result = await authService.setPassword(req.body);
-    return sendSuccess(res, result);
+    await authService.forgotPassword({ email: req.body.email });
+    return sendSuccess(
+      res,
+      null,
+      'If an account with that email exists, a password reset link has been sent.'
+    );
   } catch (err) {
     next(err);
   }
 };
 
-module.exports = { register, login, logout, googleCallback, setPassword };
+/**
+ * POST /api/auth/reset-password
+ * Validates token + sets new password.
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    await authService.resetPassword({ token: req.body.token, password: req.body.password });
+    return sendSuccess(res, null, 'Password reset successfully. You can now log in.');
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, logout, googleCallback, forgotPassword, resetPassword };
+

@@ -36,4 +36,14 @@ const generalLimiter = rateLimit({
   message: { success: false, error: 'Too many requests. Please slow down.' },
 });
 
-module.exports = { loginLimiter, registerLimiter, oauthLimiter, generalLimiter };
+/** 3 forgot-password requests per 15 min per IP — prevents email bombing */
+const forgotLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many password reset requests. Please wait 15 minutes.' },
+});
+
+module.exports = { loginLimiter, registerLimiter, oauthLimiter, generalLimiter, forgotLimiter };
+

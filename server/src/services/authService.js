@@ -1,8 +1,10 @@
 const bcrypt  = require('bcryptjs');
+const crypto  = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const Joi     = require('joi');
 const pool    = require('../config/db');
-const { generateToken } = require('../utils/generateToken');
+const { generateToken }        = require('../utils/generateToken');
+const { sendPasswordResetEmail } = require('./emailService');
 
 // ── Joi Schemas ──────────────────────────────────────────
 const registerSchema = Joi.object({
@@ -70,7 +72,8 @@ const login = async ({ email, password }) => {
   if (!user.password && user.auth_provider === 'google') {
     throw {
       status: 401,
-      message: 'This account uses Google Sign-In. Use the Google button or set a password first.',
+      message: 'This account was created with Google Sign-In. Use the "Continue with Google" button, or click "Forgot Password" to set a password.',
+      hint: 'google_only',
     };
   }
 
@@ -96,26 +99,99 @@ const handleGoogleUser = (user) => {
   return token;
 };
 
-/**
- * Set password for Google-only users (stub — full OTP flow requires email service)
- */
-const setPassword = async ({ email, newPassword }) => {
-  const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-  const user = rows[0];
-  if (!user) throw { status: 404, message: 'User not found.' };
-  if (user.auth_provider === 'local') throw { status: 400, message: 'Account already has a password.' };
+// ── Token expiry ──────────────────────────────────────────
+const RESET_TOKEN_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
 
-  const schema = Joi.string().min(8).pattern(/^(?=.*[A-Z])(?=.*\d)/);
-  const { error } = schema.validate(newPassword);
-  if (error) throw { status: 400, message: 'Password must have at least 8 chars, 1 uppercase, 1 number.' };
-
-  const hashed = await bcrypt.hash(newPassword, 12);
-  await pool.query(
-    `UPDATE users SET password = ?, auth_provider = 'both' WHERE email = ?`,
-    [hashed, email]
-  );
-
-  return { message: 'Password set successfully. You can now log in with either method.' };
+/** Auto-create the reset-tokens table if it doesn't exist (idempotent) */
+let _tableReady = false;
+const ensureResetTable = async () => {
+  if (_tableReady) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      user_id     VARCHAR(36)  NOT NULL,
+      token_hash  VARCHAR(64)  NOT NULL UNIQUE,
+      expires_at  DATETIME     NOT NULL,
+      created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  _tableReady = true;
 };
 
-module.exports = { register, login, handleGoogleUser, setPassword };
+/**
+ * Forgot Password — generate a reset token and email it.
+ * Always responds with 200 (never reveals whether email exists).
+ */
+const forgotPassword = async ({ email }) => {
+  const { error } = Joi.string().email().required().validate(email);
+  if (error) throw { status: 400, message: 'Please enter a valid email address.' };
+
+  await ensureResetTable();
+
+  const [rows] = await pool.query('SELECT id, full_name, email FROM users WHERE email = ?', [email]);
+
+  // Silently succeed even if email not found (prevents user enumeration)
+  if (!rows.length) return;
+
+  const user = rows[0];
+
+  // Generate a cryptographically secure random token
+  const rawToken  = crypto.randomBytes(32).toString('hex');          // sent in email
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex'); // stored in DB
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_EXPIRY_MS);
+
+  // Remove any prior tokens for this user, then insert new one
+  await pool.query('DELETE FROM password_reset_tokens WHERE user_id = ?', [user.id]);
+  await pool.query(
+    'INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)',
+    [user.id, tokenHash, expiresAt]
+  );
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
+  await sendPasswordResetEmail({ to: user.email, name: user.full_name, resetUrl });
+};
+
+/**
+ * Reset Password — validate token and set new password.
+ */
+const resetPassword = async ({ token, password }) => {
+  const schema = Joi.object({
+    token:    Joi.string().hex().length(64).required(),
+    password: Joi.string().min(8).pattern(/^(?=.*[A-Z])(?=.*\d)/).required()
+      .messages({ 'string.pattern.base': 'Password must have at least 1 uppercase letter and 1 number.' }),
+  });
+  const { error } = schema.validate({ token, password });
+  if (error) throw { status: 400, message: error.details[0].message };
+
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+  const [rows] = await pool.query(
+    'SELECT * FROM password_reset_tokens WHERE token_hash = ? AND expires_at > NOW()',
+    [tokenHash]
+  );
+
+  if (!rows.length) {
+    throw { status: 400, message: 'This reset link is invalid or has expired. Please request a new one.' };
+  }
+
+  const { user_id } = rows[0];
+  const hashed = await bcrypt.hash(password, 12);
+
+  // Update password and ensure auth_provider allows local login
+  await pool.query(
+    `UPDATE users
+     SET    password = ?,
+            auth_provider = CASE
+              WHEN auth_provider = 'google' THEN 'both'
+              ELSE auth_provider
+            END
+     WHERE  id = ?`,
+    [hashed, user_id]
+  );
+
+  // Invalidate the used token
+  await pool.query('DELETE FROM password_reset_tokens WHERE user_id = ?', [user_id]);
+};
+
+module.exports = { register, login, handleGoogleUser, forgotPassword, resetPassword };

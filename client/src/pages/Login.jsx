@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { loginWithGoogle } from '../services/authService';
 
@@ -13,15 +13,18 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [isGoogleOnly, setIsGoogleOnly] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) { setError(''); setIsGoogleOnly(false); }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setIsGoogleOnly(false);
     try {
       const data = await login(formData.email, formData.password);
       // Role-based redirect
@@ -31,6 +34,11 @@ const Login = () => {
         navigate('/');
       }
     } catch (err) {
+      // Backend sets hint:'google_only' for Google-registered accounts
+      if (err.message?.includes('google_only') || err.hint === 'google_only' ||
+          err.message?.toLowerCase().includes('google sign-in')) {
+        setIsGoogleOnly(true);
+      }
       setError(err.message || 'Login failed');
     } finally {
       setLoading(false);
@@ -91,16 +99,41 @@ const Login = () => {
             </div>
 
             {error && (
-              <div className="text-status-error text-sm text-center">
-                {error}
+              <div className={`text-sm rounded-lg px-3 py-2.5 ${
+                isGoogleOnly
+                  ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700'
+                  : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700'
+              }`}>
+                {isGoogleOnly ? (
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="text-amber-500 shrink-0 mt-0.5" size={15} />
+                    <div className="text-amber-700 dark:text-amber-300">
+                      <p className="font-semibold">This account uses Google Sign-In.</p>
+                      <p className="text-xs mt-0.5">
+                        Use the <strong>"Continue with Google"</strong> button below, or{' '}
+                        <Link
+                          to={`/forgot-password?email=${encodeURIComponent(formData.email)}`}
+                          className="underline hover:text-brand-primary font-semibold"
+                        >
+                          set a password via Forgot Password
+                        </Link>.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-status-error text-center">{error}</p>
+                )}
               </div>
             )}
 
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <a href="#" className="font-medium text-brand-primary hover:text-brand-primaryDark">
+                <Link
+                  to="/forgot-password"
+                  className="font-medium text-brand-primary hover:text-brand-primaryDark"
+                >
                   {t('auth.forgotPassword')}
-                </a>
+                </Link>
               </div>
             </div>
 

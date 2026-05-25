@@ -23,6 +23,11 @@ const { generalLimiter, loginLimiter, registerLimiter } = require('./middleware/
 
 const app = express();
 
+// ── Trust Proxy (required behind Nginx / Docker) ──────────
+// Allows express-rate-limit to read the real client IP from
+// the X-Forwarded-For header set by Nginx.
+app.set('trust proxy', 1);
+
 // ── Security Headers (Helmet) ─────────────────────────────
 app.use(helmet());
 // Disable strict CSP for dev (allows Vite HMR / inline scripts)

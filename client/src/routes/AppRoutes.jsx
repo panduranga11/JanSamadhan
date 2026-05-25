@@ -9,6 +9,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import Home from '../pages/Home';
 import Login from '../pages/Login';
 import Register from '../pages/Register';
+import ForgotPassword from '../pages/ForgotPassword';
+import ResetPassword from '../pages/ResetPassword';
 import OAuthCallback from '../pages/OAuthCallback';
 
 // User Pages
@@ -34,6 +36,8 @@ const AppRoutes = () => {
       </Route>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Google OAuth callback — public, no auth guard needed */}
       <Route path="/auth/callback" element={<OAuthCallback />} />
@@ -52,6 +56,7 @@ const AppRoutes = () => {
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin', 'super_admin']}><AdminLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="complaints" element={<ManageComplaints />} />
+        <Route path="complaint/:id" element={<ComplaintDetails />} />
         <Route path="users" element={<Users />} />
         {/* Super admin only */}
         <Route path="admins" element={<ProtectedRoute allowedRoles={['super_admin']}><ManageAdmins /></ProtectedRoute>} />

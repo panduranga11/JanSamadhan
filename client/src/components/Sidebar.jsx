@@ -35,7 +35,7 @@ const Sidebar = ({ isAdmin = false }) => {
     };
 
     return (
-        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen fixed left-0 top-0 pt-16 hidden md:block z-40 transition-colors shadow-sm">
+        <aside className="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 h-screen fixed left-0 top-0 pt-24 hidden md:block z-40 transition-colors shadow-sm">
             <div className="flex flex-col h-full py-6 space-y-1">
                 <div className="px-6 pb-4 mb-2 border-b border-gray-100 dark:border-gray-800">
                     <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">

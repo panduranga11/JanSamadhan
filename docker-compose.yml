@@ -1,0 +1,39 @@
+services:
+  # ── Backend API ─────────────────────────────────────────
+  # NOTE: DB is now hosted on AWS RDS (external).
+  # Set DB_HOST, DB_USER, DB_PASSWORD, DB_NAME in server/.env
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: jansamadhan-server-v2
+    restart: unless-stopped
+    env_file: ./server/.env
+    environment:
+      NODE_ENV: production
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+    ports:
+      - "5000:5000"
+    networks:
+      - jansamadhan-net
+
+  # ── Frontend (Nginx) ───────────────────────────────────
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_SOCKET_URL: ""
+    container_name: jansamadhan-client-v2
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "80:80"
+    networks:
+      - jansamadhan-net
+
+networks:
+  jansamadhan-net:
+    driver: bridge

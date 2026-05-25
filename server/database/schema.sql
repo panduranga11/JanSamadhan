@@ -166,6 +166,18 @@ CREATE TABLE IF NOT EXISTS notifications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------------
+-- 11. password_reset_tokens (references users)
+-- -----------------------------------------------------------
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     VARCHAR(36)  NOT NULL,
+  token_hash  VARCHAR(64)  NOT NULL UNIQUE,
+  expires_at  DATETIME     NOT NULL,
+  created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------------
 -- Indexes — compatible with all MySQL 8.x versions
 -- Uses a helper procedure to skip if index already exists
 -- -----------------------------------------------------------

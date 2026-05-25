@@ -56,8 +56,8 @@ passport.use(
           }
         }
 
-        if (user.status === 'banned') {
-          return done(null, false, { message: 'Account is banned.' });
+        if (user.status === 'banned' || user.status === 'inactive') {
+          return done(null, false, { message: 'Account is banned or inactive.' });
         }
 
         return done(null, user);
